@@ -1,0 +1,97 @@
+import { motion } from "framer-motion";
+import { Leaf, Recycle, Trash2, AlertTriangle, HeartPulse } from "lucide-react";
+import DashboardLayout from "@/components/DashboardLayout";
+
+const categories = [
+  {
+    title: "Biodegradable Waste",
+    icon: Leaf,
+    emoji: "🍂",
+    color: "bg-primary",
+    description: "Organic waste that decomposes naturally through biological processes.",
+    examples: ["Food scraps & leftovers", "Fruit & vegetable peels", "Garden waste & leaves", "Paper & cardboard", "Coffee grounds & tea bags", "Eggshells"],
+    tip: "Collect in a green bin. Great for composting!",
+  },
+  {
+    title: "Recyclable Waste",
+    icon: Recycle,
+    emoji: "♻️",
+    color: "bg-accent",
+    description: "Materials that can be processed and reused to create new products.",
+    examples: ["Plastic bottles & containers", "Glass jars & bottles", "Metal cans & aluminum", "Newspapers & magazines", "Cardboard boxes", "Clean packaging"],
+    tip: "Rinse containers before recycling. Remove labels when possible.",
+  },
+  {
+    title: "Non-Recyclable Waste",
+    icon: Trash2,
+    emoji: "🚫",
+    color: "bg-muted-foreground",
+    description: "Items that cannot be recycled and must go to landfills.",
+    examples: ["Styrofoam & polystyrene", "Chip bags & candy wrappers", "Ceramics & pottery", "Diapers & sanitary products", "Broken mirrors", "Contaminated food packaging"],
+    tip: "Minimize non-recyclable waste by choosing reusable alternatives.",
+  },
+  {
+    title: "Medical / Hazardous Waste",
+    icon: HeartPulse,
+    emoji: "⚠️",
+    color: "bg-destructive",
+    description: "Dangerous materials requiring special handling and disposal.",
+    examples: ["Used syringes & needles", "Expired medications", "Batteries & electronics", "Paint & chemicals", "Fluorescent bulbs", "Motor oil & antifreeze"],
+    tip: "Never mix with regular waste. Use designated drop-off points.",
+  },
+];
+
+const container = { hidden: {}, show: { transition: { staggerChildren: 0.12 } } };
+const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
+
+export default function WasteGuide() {
+  return (
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-foreground">Waste Segregation Guide</h1>
+          <p className="text-muted-foreground mt-1">Learn how to sort your waste for a cleaner environment.</p>
+        </div>
+
+        <motion.div variants={container} initial="hidden" animate="show" className="grid md:grid-cols-2 gap-6">
+          {categories.map((cat) => (
+            <motion.div
+              key={cat.title}
+              variants={item}
+              className="group rounded-2xl bg-card border border-border overflow-hidden hover:eco-shadow transition-shadow duration-300"
+            >
+              {/* Header */}
+              <div className={`${cat.color} p-5 flex items-center gap-4`}>
+                <span className="text-4xl">{cat.emoji}</span>
+                <div>
+                  <h2 className="font-display text-xl font-bold text-primary-foreground">{cat.title}</h2>
+                  <p className="text-sm text-primary-foreground/70 mt-0.5">{cat.description}</p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-2">Common Examples</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {cat.examples.map((ex) => (
+                      <div key={ex} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        {ex}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-muted p-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-secondary shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">{cat.tip}</p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </DashboardLayout>
+  );
+}
