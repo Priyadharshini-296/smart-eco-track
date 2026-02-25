@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
 import { Leaf, Recycle, Trash2, AlertTriangle, HeartPulse } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import wasteBio from "@/assets/waste-biodegradable.jpg";
+import wasteRecycle from "@/assets/waste-recyclable.jpg";
+import wasteNon from "@/assets/waste-nonrecyclable.jpg";
+import wasteHaz from "@/assets/waste-hazardous.jpg";
 
 const categories = [
   {
@@ -8,36 +12,44 @@ const categories = [
     icon: Leaf,
     emoji: "🍂",
     color: "bg-primary",
+    image: wasteBio,
     description: "Organic waste that decomposes naturally through biological processes.",
     examples: ["Food scraps & leftovers", "Fruit & vegetable peels", "Garden waste & leaves", "Paper & cardboard", "Coffee grounds & tea bags", "Eggshells"],
     tip: "Collect in a green bin. Great for composting!",
+    binColor: "Green",
   },
   {
     title: "Recyclable Waste",
     icon: Recycle,
     emoji: "♻️",
     color: "bg-accent",
+    image: wasteRecycle,
     description: "Materials that can be processed and reused to create new products.",
     examples: ["Plastic bottles & containers", "Glass jars & bottles", "Metal cans & aluminum", "Newspapers & magazines", "Cardboard boxes", "Clean packaging"],
     tip: "Rinse containers before recycling. Remove labels when possible.",
+    binColor: "Blue",
   },
   {
     title: "Non-Recyclable Waste",
     icon: Trash2,
     emoji: "🚫",
     color: "bg-muted-foreground",
+    image: wasteNon,
     description: "Items that cannot be recycled and must go to landfills.",
     examples: ["Styrofoam & polystyrene", "Chip bags & candy wrappers", "Ceramics & pottery", "Diapers & sanitary products", "Broken mirrors", "Contaminated food packaging"],
     tip: "Minimize non-recyclable waste by choosing reusable alternatives.",
+    binColor: "Black",
   },
   {
     title: "Medical / Hazardous Waste",
     icon: HeartPulse,
     emoji: "⚠️",
     color: "bg-destructive",
+    image: wasteHaz,
     description: "Dangerous materials requiring special handling and disposal.",
     examples: ["Used syringes & needles", "Expired medications", "Batteries & electronics", "Paint & chemicals", "Fluorescent bulbs", "Motor oil & antifreeze"],
     tip: "Never mix with regular waste. Use designated drop-off points.",
+    binColor: "Red",
   },
 ];
 
@@ -60,17 +72,24 @@ export default function WasteGuide() {
               variants={item}
               className="group rounded-2xl bg-card border border-border overflow-hidden hover:eco-shadow transition-shadow duration-300"
             >
-              {/* Header */}
-              <div className={`${cat.color} p-5 flex items-center gap-4`}>
-                <span className="text-4xl">{cat.emoji}</span>
-                <div>
-                  <h2 className="font-display text-xl font-bold text-primary-foreground">{cat.title}</h2>
-                  <p className="text-sm text-primary-foreground/70 mt-0.5">{cat.description}</p>
+              {/* AI-Generated Image */}
+              <div className="relative h-48 overflow-hidden">
+                <img src={cat.image} alt={cat.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-3xl">{cat.emoji}</span>
+                    <h2 className="font-display text-lg font-bold text-white">{cat.title}</h2>
+                  </div>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white backdrop-blur-sm">
+                    🗑️ {cat.binColor} Bin
+                  </span>
                 </div>
               </div>
 
               {/* Body */}
               <div className="p-5 space-y-4">
+                <p className="text-sm text-muted-foreground">{cat.description}</p>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-2">Common Examples</h3>
                   <div className="grid grid-cols-2 gap-2">

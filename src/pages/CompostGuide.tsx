@@ -1,12 +1,15 @@
 import { motion } from "framer-motion";
-import { Sprout, Home, Layers, Bug, ArrowRight, CheckCircle } from "lucide-react";
+import { CheckCircle, AlertTriangle } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
+import compostHome from "@/assets/compost-home.jpg";
+import compostPit from "@/assets/compost-pit.jpg";
+import compostVermi from "@/assets/compost-vermi.jpg";
 
 const methods = [
   {
     title: "Home Composting",
-    icon: Home,
     emoji: "🏠",
+    image: compostHome,
     description: "Simple backyard or kitchen composting for beginners.",
     steps: [
       "Choose a dry, shady spot near a water source",
@@ -20,8 +23,8 @@ const methods = [
   },
   {
     title: "Pit Composting",
-    icon: Layers,
     emoji: "🕳️",
+    image: compostPit,
     description: "Underground composting method, great for large gardens.",
     steps: [
       "Dig a pit 2-3 feet deep in your garden",
@@ -35,8 +38,8 @@ const methods = [
   },
   {
     title: "Vermicomposting",
-    icon: Bug,
     emoji: "🪱",
+    image: compostVermi,
     description: "Using worms to turn waste into nutrient-rich compost.",
     steps: [
       "Get a worm bin with drainage holes",
@@ -63,20 +66,23 @@ export default function CompostGuide() {
         </div>
 
         <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
-          {methods.map((method, idx) => (
+          {methods.map((method) => (
             <motion.div
               key={method.title}
               variants={item}
               className="rounded-2xl bg-card border border-border overflow-hidden hover:eco-shadow transition-shadow duration-300"
             >
               <div className="flex flex-col lg:flex-row">
-                {/* Left header */}
-                <div className="eco-gradient p-6 lg:w-72 flex flex-col items-center justify-center text-center shrink-0">
-                  <span className="text-5xl mb-3">{method.emoji}</span>
-                  <h2 className="font-display text-xl font-bold text-primary-foreground">{method.title}</h2>
-                  <p className="text-sm text-primary-foreground/70 mt-1">{method.description}</p>
-                  <div className="mt-4 inline-flex items-center gap-1 rounded-full bg-primary-foreground/20 px-3 py-1 text-xs text-primary-foreground font-medium">
-                    ⏱ {method.duration}
+                {/* Image + Info */}
+                <div className="lg:w-80 shrink-0 relative overflow-hidden">
+                  <img src={method.image} alt={method.title} className="w-full h-full object-cover min-h-[200px]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-5">
+                    <span className="text-4xl mb-2">{method.emoji}</span>
+                    <h2 className="font-display text-xl font-bold text-white">{method.title}</h2>
+                    <p className="text-sm text-white/70 mt-1">{method.description}</p>
+                    <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur-sm px-3 py-1 text-xs text-white font-medium w-fit">
+                      ⏱ {method.duration}
+                    </div>
                   </div>
                 </div>
 
