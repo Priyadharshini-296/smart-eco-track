@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Leaf, LayoutDashboard, Recycle, Sprout, MapPin, Bell,
-  Camera, Shield, LogOut, Menu, X, ChevronRight
+  Camera, Shield, LogOut, Menu, X, ChevronRight, ShoppingBag, ScanSearch
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ const navItems = [
   { path: "/live-tracking", label: "Live Tracking", icon: MapPin },
   { path: "/complaints", label: "Report Garbage", icon: Camera },
   { path: "/notifications", label: "Notifications", icon: Bell },
+  { path: "/marketplace", label: "EcoMarket", icon: ShoppingBag },
+  { path: "/waste-classifier", label: "AI Classifier", icon: ScanSearch },
   { path: "/admin", label: "Admin Panel", icon: Shield },
 ];
 
