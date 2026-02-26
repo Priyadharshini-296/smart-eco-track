@@ -59,8 +59,8 @@ export default function Login() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Account created! You can now sign in.");
-        navigate("/dashboard");
+        toast.success("Account created successfully!");
+        navigate("/language");
       }
     } catch (err: any) {
       toast.error("Network error. Please check your connection and try again.");
