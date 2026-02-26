@@ -6,6 +6,13 @@ import wasteRecycle from "@/assets/waste-recyclable.jpg";
 import wasteNon from "@/assets/waste-nonrecyclable.jpg";
 import wasteHaz from "@/assets/waste-hazardous.jpg";
 
+const binColorMap: Record<string, string> = {
+  Green: "bg-green-600 text-white",
+  Blue: "bg-blue-600 text-white",
+  Black: "bg-gray-900 text-white",
+  Red: "bg-red-600 text-white",
+};
+
 const categories = [
   {
     title: "Biodegradable Waste",
@@ -81,7 +88,7 @@ export default function WasteGuide() {
                     <span className="text-3xl">{cat.emoji}</span>
                     <h2 className="font-display text-lg font-bold text-white">{cat.title}</h2>
                   </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white backdrop-blur-sm">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm ${binColorMap[cat.binColor]}`}>
                     🗑️ {cat.binColor} Bin
                   </span>
                 </div>
