@@ -20,11 +20,22 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         toast.error(error.message);
       } else {
-        navigate("/dashboard");
+        // Check if user has set language preference
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("language")
+          .eq("id", data.user.id)
+          .single();
+        
+        if (!profile?.language || profile.language === 'english') {
+          navigate("/language");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err: any) {
       toast.error("Network error. Please check your connection and try again.");
@@ -48,8 +59,8 @@ export default function Login() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Check your email to verify your account!");
-        setMode("login");
+        toast.success("Account created! You can now sign in.");
+        navigate("/dashboard");
       }
     } catch (err: any) {
       toast.error("Network error. Please check your connection and try again.");
