@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Leaf, LayoutDashboard, Recycle, Sprout, MapPin, Bell,
-  Camera, Shield, LogOut, Menu, X, ChevronRight, ShoppingBag, ScanSearch
+  Camera, Shield, LogOut, Menu, X, ChevronRight, ShoppingBag, ScanSearch, Globe
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -111,6 +111,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <div className="flex-1" />
           <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/language")} title="Change Language">
+              <Globe className="h-5 w-5" />
+            </Button>
             <Button variant="ghost" size="icon" className="relative" onClick={() => navigate("/notifications")}>
               <Bell className="h-5 w-5" />
               <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">3</span>
