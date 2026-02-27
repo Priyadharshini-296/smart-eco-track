@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ShoppingBag, Tag, MapPin, X, Camera, Search, Filter } from "lucide-react";
+import { Plus, ShoppingBag, Tag, MapPin, X, Camera, Search, Filter, Mail } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ interface Product {
   condition: string;
   image_url: string | null;
   location: string | null;
+  contact_email: string | null;
   is_sold: boolean;
   created_at: string;
 }
@@ -42,6 +43,7 @@ export default function Marketplace() {
   const [category, setCategory] = useState("Other");
   const [condition, setCondition] = useState("Used");
   const [location, setLocation] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -83,14 +85,15 @@ export default function Marketplace() {
       category,
       condition,
       location: location.trim() || null,
+      contact_email: contactEmail.trim() || null,
       image_url: imageUrl,
-    });
+    } as any);
 
     if (error) { toast.error("Failed to list product."); }
     else {
       toast.success("Product listed!");
       setDialogOpen(false);
-      setTitle(""); setDescription(""); setPrice(""); setCategory("Other"); setCondition("Used"); setLocation(""); setImageFile(null);
+      setTitle(""); setDescription(""); setPrice(""); setCategory("Other"); setCondition("Used"); setLocation(""); setContactEmail(""); setImageFile(null);
       fetchProducts();
     }
     setSubmitting(false);
@@ -149,6 +152,7 @@ export default function Marketplace() {
                   </Select>
                   <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
                 </div>
+                <Input type="email" placeholder="Contact email (visible to buyers)" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer rounded-xl border-2 border-dashed border-border p-4 hover:border-primary transition-colors">
                     <Camera className="h-5 w-5 text-muted-foreground" />
@@ -211,6 +215,15 @@ export default function Marketplace() {
                     <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">{product.condition}</span>
                     {product.location && <span className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground"><MapPin className="h-3 w-3 inline mr-1" />{product.location}</span>}
                   </div>
+                  {userId !== product.user_id && (product as any).contact_email && (
+                    <div className="pt-2">
+                      <Button size="sm" variant="outline" className="gap-2 w-full" asChild>
+                        <a href={`mailto:${(product as any).contact_email}?subject=Inquiry about: ${encodeURIComponent(product.title)}`}>
+                          <Mail className="h-3 w-3" /> Contact Seller
+                        </a>
+                      </Button>
+                    </div>
+                  )}
                   {userId === product.user_id && (
                     <div className="flex gap-2 pt-2">
                       <Button size="sm" variant="outline" onClick={() => handleMarkSold(product.id)}>Mark Sold</Button>

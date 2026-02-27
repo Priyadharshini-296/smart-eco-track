@@ -1,0 +1,1 @@
+ALTER TABLE public.marketplace_products ADD COLUMN IF NOT EXISTS contact_email text;

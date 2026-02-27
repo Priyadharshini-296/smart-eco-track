@@ -13,6 +13,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Extract mime type and base64 data from data URI
+    const match = image.match(/^data:(image\/\w+);base64,(.+)$/);
+    const mimeType = match ? match[1] : "image/jpeg";
+    const base64Data = match ? match[2] : image;
+
     const systemPrompt = `You are a waste classification expert. The user will send you a photo of waste.
 Analyze the image and respond with a JSON object using tool calling.
 Identify what the waste item is, which colored bin it should go in, a brief explanation, and disposal tips.
@@ -40,7 +45,7 @@ Be specific about the item and give practical tips.`;
             role: "user",
             content: [
               { type: "text", text: "Classify this waste item. Which bin should it go in?" },
-              { type: "image_url", image_url: { url: image } },
+              { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
             ],
           },
         ],
