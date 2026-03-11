@@ -2,21 +2,7 @@ import { motion } from "framer-motion";
 import { Recycle, Sprout, MapPin, Camera, Bell, TrendingUp, Trash2, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "@/components/DashboardLayout";
-
-const stats = [
-  { label: "Complaints Filed", value: "24", icon: Camera, color: "eco-gradient" },
-  { label: "Resolved", value: "18", icon: CheckCircle, color: "eco-gradient-warm" },
-  { label: "Vehicles Active", value: "7", icon: MapPin, color: "eco-gradient" },
-  { label: "Waste Collected", value: "3.2T", icon: Trash2, color: "eco-gradient-warm" },
-];
-
-const quickLinks = [
-  { path: "/waste-guide", label: "Waste Segregation Guide", desc: "Learn proper waste sorting", icon: Recycle, emoji: "♻️" },
-  { path: "/compost-guide", label: "Compost Guide", desc: "Start composting at home", icon: Sprout, emoji: "🌱" },
-  { path: "/live-tracking", label: "Track Vehicles", desc: "Real-time garbage truck tracking", icon: MapPin, emoji: "🗺️" },
-  { path: "/complaints", label: "Report Garbage", desc: "Upload and geo-tag complaints", icon: Camera, emoji: "📸" },
-  { path: "/notifications", label: "Notifications", desc: "Stay updated on collections", icon: Bell, emoji: "🔔" },
-];
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const container = {
   hidden: {},
@@ -28,15 +14,31 @@ const item = {
 };
 
 export default function Dashboard() {
+  const { t } = useLanguage();
+
+  const stats = [
+    { label: t("dashboard.complaintsFiled"), value: "24", icon: Camera, color: "eco-gradient" },
+    { label: t("dashboard.resolved"), value: "18", icon: CheckCircle, color: "eco-gradient-warm" },
+    { label: t("dashboard.vehiclesActive"), value: "7", icon: MapPin, color: "eco-gradient" },
+    { label: t("dashboard.wasteCollected"), value: "3.2T", icon: Trash2, color: "eco-gradient-warm" },
+  ];
+
+  const quickLinks = [
+    { path: "/waste-guide", label: t("nav.wasteGuide"), desc: t("dashboard.wasteGuideDesc"), icon: Recycle, emoji: "♻️" },
+    { path: "/compost-guide", label: t("nav.compostGuide"), desc: t("dashboard.compostGuideDesc"), icon: Sprout, emoji: "🌱" },
+    { path: "/live-tracking", label: t("dashboard.trackVehicles"), desc: t("dashboard.trackVehiclesDesc"), icon: MapPin, emoji: "🗺️" },
+    { path: "/complaints", label: t("dashboard.reportGarbage"), desc: t("dashboard.reportGarbageDesc"), icon: Camera, emoji: "📸" },
+    { path: "/notifications", label: t("nav.notifications"), desc: t("dashboard.notificationsDesc"), icon: Bell, emoji: "🔔" },
+  ];
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's your eco overview.</p>
+          <h1 className="font-display text-3xl font-bold text-foreground">{t("dashboard.title")}</h1>
+          <p className="text-muted-foreground mt-1">{t("dashboard.welcome")}</p>
         </div>
 
-        {/* Stats */}
         <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((s) => (
             <motion.div key={s.label} variants={item} className="rounded-2xl bg-card border border-border p-5 eco-shadow">
@@ -49,9 +51,8 @@ export default function Dashboard() {
           ))}
         </motion.div>
 
-        {/* Quick Links */}
         <div>
-          <h2 className="font-display text-xl font-semibold text-foreground mb-4">Quick Access</h2>
+          <h2 className="font-display text-xl font-semibold text-foreground mb-4">{t("dashboard.quickAccess")}</h2>
           <motion.div variants={container} initial="hidden" animate="show" className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {quickLinks.map((link) => (
               <motion.div key={link.path} variants={item}>
@@ -72,7 +73,6 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* Eco Tip */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -82,10 +82,8 @@ export default function Dashboard() {
           <div className="flex items-start gap-4">
             <TrendingUp className="h-8 w-8 shrink-0 mt-1" />
             <div>
-              <h3 className="font-display text-lg font-bold">Eco Tip of the Day</h3>
-              <p className="mt-1 text-primary-foreground/80">
-                Composting food scraps can reduce household waste by up to 30%. Start your compost journey today with our step-by-step guide!
-              </p>
+              <h3 className="font-display text-lg font-bold">{t("dashboard.ecoTipTitle")}</h3>
+              <p className="mt-1 text-primary-foreground/80">{t("dashboard.ecoTipText")}</p>
             </div>
           </div>
         </motion.div>

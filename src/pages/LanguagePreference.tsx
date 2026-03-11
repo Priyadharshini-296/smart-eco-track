@@ -5,19 +5,22 @@ import { Globe, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { Language } from "@/i18n/translations";
 
 const LANGUAGES = [
-  { code: "english", label: "English", native: "English", flag: "🇬🇧" },
-  { code: "tamil", label: "Tamil", native: "தமிழ்", flag: "🇮🇳" },
-  { code: "telugu", label: "Telugu", native: "తెలుగు", flag: "🇮🇳" },
-  { code: "kannada", label: "Kannada", native: "ಕನ್ನಡ", flag: "🇮🇳" },
-  { code: "hindi", label: "Hindi", native: "हिन्दी", flag: "🇮🇳" },
+  { code: "english" as Language, label: "English", native: "English", flag: "🇬🇧" },
+  { code: "tamil" as Language, label: "Tamil", native: "தமிழ்", flag: "🇮🇳" },
+  { code: "telugu" as Language, label: "Telugu", native: "తెలుగు", flag: "🇮🇳" },
+  { code: "kannada" as Language, label: "Kannada", native: "ಕನ್ನಡ", flag: "🇮🇳" },
+  { code: "hindi" as Language, label: "Hindi", native: "हिन्दी", flag: "🇮🇳" },
 ];
 
 export default function LanguagePreference() {
-  const [selected, setSelected] = useState("english");
+  const [selected, setSelected] = useState<Language>("english");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { setLanguage, t } = useLanguage();
 
   const handleSave = async () => {
     setLoading(true);
@@ -32,6 +35,7 @@ export default function LanguagePreference() {
     if (error) {
       toast.error("Failed to save preference.");
     } else {
+      setLanguage(selected);
       toast.success("Language preference saved!");
       navigate("/dashboard");
     }
@@ -49,8 +53,8 @@ export default function LanguagePreference() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl eco-gradient eco-shadow-lg">
             <Globe className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="font-display text-3xl font-bold text-foreground">Choose Language</h1>
-          <p className="text-muted-foreground mt-2">Select your preferred language for the app</p>
+          <h1 className="font-display text-3xl font-bold text-foreground">{t("lang.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("lang.subtitle")}</p>
         </div>
 
         <div className="space-y-3">
@@ -87,7 +91,7 @@ export default function LanguagePreference() {
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
           ) : (
             <>
-              Continue <ArrowRight className="ml-2 h-5 w-5" />
+              {t("lang.continue")} <ArrowRight className="ml-2 h-5 w-5" />
             </>
           )}
         </Button>
