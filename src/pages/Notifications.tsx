@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, Truck, MapPin, AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
+import { Bell, Truck, AlertTriangle, CheckCircle, Trash2 } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface Notification {
   id: string;
@@ -30,8 +31,8 @@ const typeConfig = {
 };
 
 export default function Notifications() {
+  const { t } = useLanguage();
   const [notifications, setNotifications] = useState(demoNotifications);
-
   const markAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   const clearAll = () => setNotifications([]);
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -41,18 +42,14 @@ export default function Notifications() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Notifications</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">{t("notif.title")}</h1>
             <p className="text-muted-foreground mt-1">
-              {unreadCount > 0 ? `You have ${unreadCount} unread notifications` : "You're all caught up!"}
+              {unreadCount > 0 ? t("notif.unread").replace("{count}", String(unreadCount)) : t("notif.allCaughtUp")}
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={markAllRead} disabled={unreadCount === 0}>
-              Mark all read
-            </Button>
-            <Button variant="outline" size="sm" onClick={clearAll} disabled={notifications.length === 0}>
-              <Trash2 className="h-4 w-4 mr-1" /> Clear
-            </Button>
+            <Button variant="outline" size="sm" onClick={markAllRead} disabled={unreadCount === 0}>{t("notif.markAllRead")}</Button>
+            <Button variant="outline" size="sm" onClick={clearAll} disabled={notifications.length === 0}><Trash2 className="h-4 w-4 mr-1" /> {t("notif.clear")}</Button>
           </div>
         </div>
 
@@ -60,23 +57,16 @@ export default function Notifications() {
           {notifications.length === 0 ? (
             <div className="rounded-2xl bg-card border border-border p-12 text-center">
               <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <p className="font-display font-semibold text-foreground">No notifications</p>
-              <p className="text-sm text-muted-foreground mt-1">You'll be notified about vehicle arrivals and complaint updates.</p>
+              <p className="font-display font-semibold text-foreground">{t("notif.noNotifications")}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t("notif.noNotifDesc")}</p>
             </div>
           ) : (
             notifications.map((n, idx) => {
               const config = typeConfig[n.type];
               const Icon = config.icon;
               return (
-                <motion.div
-                  key={n.id}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.04 }}
-                  className={`rounded-2xl bg-card border p-5 flex items-start gap-4 transition-colors ${
-                    n.read ? "border-border" : "border-primary/30 bg-primary/5"
-                  }`}
-                >
+                <motion.div key={n.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.04 }}
+                  className={`rounded-2xl bg-card border p-5 flex items-start gap-4 transition-colors ${n.read ? "border-border" : "border-primary/30 bg-primary/5"}`}>
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${config.class}`}>
                     <Icon className="h-5 w-5 text-primary-foreground" />
                   </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ShoppingBag, Tag, MapPin, X, Camera, Search, Filter, Mail } from "lucide-react";
+import { motion } from "framer-motion";
+import { Plus, ShoppingBag, Tag, MapPin, Camera, Search, Filter, Mail } from "lucide-react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,34 +9,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const CATEGORIES = ["Electronics", "Furniture", "Clothing", "Books", "Kitchen", "Garden", "Sports", "Other"];
 const CONDITIONS = ["Like New", "Good", "Fair", "Used"];
 
 interface Product {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  price: number;
-  category: string;
-  condition: string;
-  image_url: string | null;
-  location: string | null;
-  contact_email: string | null;
-  is_sold: boolean;
-  created_at: string;
+  id: string; user_id: string; title: string; description: string | null; price: number;
+  category: string; condition: string; image_url: string | null; location: string | null;
+  contact_email: string | null; is_sold: boolean; created_at: string;
 }
 
 export default function Marketplace() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -53,45 +44,32 @@ export default function Marketplace() {
   }, []);
 
   const fetchProducts = async () => {
-    const { data, error } = await supabase
-      .from("marketplace_products")
-      .select("*")
-      .eq("is_sold", false)
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("marketplace_products").select("*").eq("is_sold", false).order("created_at", { ascending: false });
     if (!error && data) setProducts(data as Product[]);
     setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) { toast.error("Please log in first."); return; }
+    if (!userId) { toast.error(t("market.loginFirst")); return; }
     setSubmitting(true);
-
     let imageUrl: string | null = null;
     if (imageFile) {
       const ext = imageFile.name.split(".").pop();
       const path = `${userId}/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("marketplace-images").upload(path, imageFile);
-      if (uploadError) { toast.error("Image upload failed."); setSubmitting(false); return; }
+      if (uploadError) { toast.error(t("market.uploadFailed")); setSubmitting(false); return; }
       const { data: publicData } = supabase.storage.from("marketplace-images").getPublicUrl(path);
       imageUrl = publicData.publicUrl;
     }
-
     const { error } = await supabase.from("marketplace_products").insert({
-      user_id: userId,
-      title: title.trim(),
-      description: description.trim() || null,
-      price: parseFloat(price),
-      category,
-      condition,
-      location: location.trim() || null,
-      contact_email: contactEmail.trim() || null,
-      image_url: imageUrl,
+      user_id: userId, title: title.trim(), description: description.trim() || null,
+      price: parseFloat(price), category, condition, location: location.trim() || null,
+      contact_email: contactEmail.trim() || null, image_url: imageUrl,
     } as any);
-
-    if (error) { toast.error("Failed to list product."); }
+    if (error) { toast.error(t("market.listFailed")); }
     else {
-      toast.success("Product listed!");
+      toast.success(t("market.listed"));
       setDialogOpen(false);
       setTitle(""); setDescription(""); setPrice(""); setCategory("Other"); setCondition("Used"); setLocation(""); setContactEmail(""); setImageFile(null);
       fetchProducts();
@@ -101,13 +79,13 @@ export default function Marketplace() {
 
   const handleMarkSold = async (productId: string) => {
     await supabase.from("marketplace_products").update({ is_sold: true }).eq("id", productId);
-    toast.success("Marked as sold!");
+    toast.success(t("market.markedSold"));
     fetchProducts();
   };
 
   const handleDelete = async (productId: string) => {
     await supabase.from("marketplace_products").delete().eq("id", productId);
-    toast.success("Product removed.");
+    toast.success(t("market.removed"));
     fetchProducts();
   };
 
@@ -122,24 +100,20 @@ export default function Marketplace() {
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">EcoMarket</h1>
-            <p className="text-muted-foreground mt-1">Buy & sell second-hand items. Reduce, reuse, recycle!</p>
+            <h1 className="font-display text-3xl font-bold text-foreground">{t("market.title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("market.subtitle")}</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="eco-gradient text-primary-foreground font-semibold gap-2">
-                <Plus className="h-4 w-4" /> Sell Item
-              </Button>
+              <Button className="eco-gradient text-primary-foreground font-semibold gap-2"><Plus className="h-4 w-4" /> {t("market.sellItem")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="font-display">List a Product</DialogTitle>
-              </DialogHeader>
+              <DialogHeader><DialogTitle className="font-display">{t("market.listProduct")}</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-                <Input placeholder="Product title" value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={100} />
-                <Textarea placeholder="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={3} />
+                <Input placeholder={t("market.productTitle")} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={100} />
+                <Textarea placeholder={t("market.descOptional")} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={3} />
                 <div className="grid grid-cols-2 gap-3">
-                  <Input type="number" placeholder="Price (₹)" value={price} onChange={(e) => setPrice(e.target.value)} required min="0" step="0.01" />
+                  <Input type="number" placeholder={t("market.price")} value={price} onChange={(e) => setPrice(e.target.value)} required min="0" step="0.01" />
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
@@ -150,40 +124,38 @@ export default function Marketplace() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>{CONDITIONS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Input placeholder="Location" value={location} onChange={(e) => setLocation(e.target.value)} />
+                  <Input placeholder={t("market.location")} value={location} onChange={(e) => setLocation(e.target.value)} />
                 </div>
-                <Input type="email" placeholder="Contact email (visible to buyers)" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
+                <Input type="email" placeholder={t("market.contactEmail")} value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} required />
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer rounded-xl border-2 border-dashed border-border p-4 hover:border-primary transition-colors">
                     <Camera className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">{imageFile ? imageFile.name : "Add photo"}</span>
+                    <span className="text-sm text-muted-foreground">{imageFile ? imageFile.name : t("market.addPhoto")}</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
                   </label>
                 </div>
                 <Button type="submit" disabled={submitting} className="w-full eco-gradient text-primary-foreground font-semibold">
-                  {submitting ? "Listing..." : "List Product"}
+                  {submitting ? t("market.listing") : t("market.listProductBtn")}
                 </Button>
               </form>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Search & Filter */}
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-12 bg-card" />
+            <Input placeholder={t("market.searchProducts")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 h-12 bg-card" />
           </div>
           <Select value={filterCategory} onValueChange={setFilterCategory}>
             <SelectTrigger className="w-40 h-12"><Filter className="h-4 w-4 mr-2" /><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">{t("market.allCategories")}</SelectItem>
               {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Products Grid */}
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => <div key={i} className="h-64 rounded-2xl bg-muted animate-pulse" />)}
@@ -191,7 +163,7 @@ export default function Marketplace() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <p className="text-muted-foreground">No products found. Be the first to list one!</p>
+            <p className="text-muted-foreground">{t("market.noProducts")}</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -200,9 +172,7 @@ export default function Marketplace() {
                 {product.image_url ? (
                   <img src={product.image_url} alt={product.title} className="h-48 w-full object-cover" />
                 ) : (
-                  <div className="h-48 w-full bg-muted flex items-center justify-center">
-                    <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
-                  </div>
+                  <div className="h-48 w-full bg-muted flex items-center justify-center"><ShoppingBag className="h-12 w-12 text-muted-foreground/30" /></div>
                 )}
                 <div className="p-4 space-y-2">
                   <div className="flex justify-between items-start">
@@ -219,15 +189,15 @@ export default function Marketplace() {
                     <div className="pt-2">
                       <Button size="sm" variant="outline" className="gap-2 w-full" asChild>
                         <a href={`mailto:${(product as any).contact_email}?subject=Inquiry about: ${encodeURIComponent(product.title)}`}>
-                          <Mail className="h-3 w-3" /> Contact Seller
+                          <Mail className="h-3 w-3" /> {t("market.contactSeller")}
                         </a>
                       </Button>
                     </div>
                   )}
                   {userId === product.user_id && (
                     <div className="flex gap-2 pt-2">
-                      <Button size="sm" variant="outline" onClick={() => handleMarkSold(product.id)}>Mark Sold</Button>
-                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(product.id)}>Delete</Button>
+                      <Button size="sm" variant="outline" onClick={() => handleMarkSold(product.id)}>{t("market.markSold")}</Button>
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(product.id)}>{t("market.delete")}</Button>
                     </div>
                   )}
                 </div>

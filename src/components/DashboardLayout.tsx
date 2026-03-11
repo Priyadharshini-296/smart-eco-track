@@ -7,23 +7,25 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/waste-guide", label: "Waste Segregation", icon: Recycle },
-  { path: "/compost-guide", label: "Compost Guide", icon: Sprout },
-  { path: "/live-tracking", label: "Live Tracking", icon: MapPin },
-  { path: "/complaints", label: "Report Garbage", icon: Camera },
-  { path: "/notifications", label: "Notifications", icon: Bell },
-  { path: "/marketplace", label: "EcoMarket", icon: ShoppingBag },
-  { path: "/waste-classifier", label: "AI Classifier", icon: ScanSearch },
-  { path: "/admin", label: "Admin Panel", icon: Shield },
+  { path: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/waste-guide", labelKey: "nav.wasteGuide", icon: Recycle },
+  { path: "/compost-guide", labelKey: "nav.compostGuide", icon: Sprout },
+  { path: "/live-tracking", labelKey: "nav.liveTracking", icon: MapPin },
+  { path: "/complaints", labelKey: "nav.complaints", icon: Camera },
+  { path: "/notifications", labelKey: "nav.notifications", icon: Bell },
+  { path: "/marketplace", labelKey: "nav.marketplace", icon: ShoppingBag },
+  { path: "/waste-classifier", labelKey: "nav.classifier", icon: ScanSearch },
+  { path: "/admin", labelKey: "nav.admin", icon: Shield },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -32,7 +34,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -45,28 +46,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-72 eco-gradient-dark text-sidebar-foreground transform transition-transform duration-300 lg:relative lg:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex h-full flex-col">
-          {/* Logo */}
           <div className="flex items-center gap-3 px-6 py-6 border-b border-sidebar-border">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl eco-gradient">
               <Leaf className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-display text-lg font-bold text-sidebar-foreground">EcoGuard</h1>
-              <p className="text-xs text-sidebar-foreground/60">Smart Waste Management</p>
+              <p className="text-xs text-sidebar-foreground/60">{t("nav.subtitle")}</p>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground">
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Nav */}
           <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -82,29 +80,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }`}
                 >
                   <item.icon className="h-5 w-5 shrink-0" />
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                   {isActive && <ChevronRight className="ml-auto h-4 w-4" />}
                 </Link>
               );
             })}
           </nav>
 
-          {/* Logout */}
           <div className="border-t border-sidebar-border p-4">
             <button
               onClick={handleLogout}
               className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
             >
               <LogOut className="h-5 w-5" />
-              <span>Log Out</span>
+              <span>{t("nav.logout")}</span>
             </button>
           </div>
         </div>
       </aside>
 
-      {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
         <header className="flex items-center gap-4 border-b border-border bg-card px-6 py-4">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-foreground">
             <Menu className="h-6 w-6" />
@@ -124,7 +119,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 overflow-y-auto p-6">
           <motion.div
             key={location.pathname}
