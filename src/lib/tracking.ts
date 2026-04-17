@@ -104,6 +104,40 @@ export function buildRoutePath(vehicle: Vehicle, stops: RouteStop[], userLoc: La
   return path;
 }
 
+// Generate a virtual depot 10–20 km from the user in a deterministic direction
+// (seeded by vehicle id so it stays stable across renders), with intermediate stops along the way.
+export function makeNearbyRoute(
+  userLoc: LatLng,
+  vehicleId: string,
+  numStops = 5,
+  minKm = 10,
+  maxKm = 20,
+): { depot: LatLng; stops: LatLng[] } {
+  // Deterministic pseudo-random from vehicle id
+  let seed = 0;
+  for (let i = 0; i < vehicleId.length; i++) seed = (seed * 31 + vehicleId.charCodeAt(i)) >>> 0;
+  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff; };
+
+  const distanceKm = minKm + rand() * (maxKm - minKm);
+  const bearing = rand() * 2 * Math.PI; // radians
+
+  // Convert km offset to degrees (approx): 1° lat ≈ 111 km
+  const dLat = (distanceKm * Math.cos(bearing)) / 111;
+  const dLng = (distanceKm * Math.sin(bearing)) / (111 * Math.cos((userLoc[0] * Math.PI) / 180));
+  const depot: LatLng = [userLoc[0] + dLat, userLoc[1] + dLng];
+
+  // Intermediate stops between depot and user with small perpendicular jitter for realism
+  const stops: LatLng[] = [];
+  for (let i = 1; i <= numStops; i++) {
+    const t = i / (numStops + 1);
+    const baseLat = depot[0] + (userLoc[0] - depot[0]) * t;
+    const baseLng = depot[1] + (userLoc[1] - depot[1]) * t;
+    const jitter = (rand() - 0.5) * 0.008; // ~800m max
+    stops.push([baseLat + jitter, baseLng + jitter]);
+  }
+  return { depot, stops };
+}
+
 // Densify a polyline by inserting interpolated points so animation is smooth
 export function densifyPath(path: LatLng[], maxSegmentKm = 0.15): LatLng[] {
   const dense: LatLng[] = [];

@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAllVehicles, fetchAllZones, fetchRouteStops,
   assignVehicle, buildRoutePath, densifyPath, cumulativeDistances,
-  computeProgress, geocodeAddress, reverseGeocode,
+  computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm,
   type Vehicle, type Zone, type RouteStop, type LatLng, type ProgressInfo,
 } from "@/lib/tracking";
 
@@ -115,14 +115,20 @@ export default function LiveTracking() {
     }
   }, [userLocation, vehicles, zones]);
 
-  // Build dense path + cumulative distances
+  // Build a virtual depot 10–20 km from the user, plus intermediate stops along the way
+  const nearby = useMemo(() => {
+    if (!vehicle || !userLocation) return null;
+    return makeNearbyRoute(userLocation, vehicle.id, 5, 10, 20);
+  }, [vehicle, userLocation]);
+
+  // Build dense path + cumulative distances (depot -> intermediate stops -> user)
   const { densePath, cumKm, fullPath } = useMemo(() => {
-    if (!vehicle || !userLocation || stops.length === 0)
+    if (!vehicle || !userLocation || !nearby)
       return { densePath: [] as LatLng[], cumKm: [] as number[], fullPath: [] as LatLng[] };
-    const full = buildRoutePath(vehicle, stops, userLocation);
+    const full: LatLng[] = [nearby.depot, ...nearby.stops, userLocation];
     const dense = densifyPath(full, 0.1);
     return { densePath: dense, cumKm: cumulativeDistances(dense), fullPath: full };
-  }, [vehicle, stops, userLocation]);
+  }, [vehicle, nearby, userLocation]);
 
   // Tick every second; recompute progress
   useEffect(() => {
@@ -275,14 +281,17 @@ export default function LiveTracking() {
                   <Popup><strong>Your location</strong></Popup>
                 </Marker>
               )}
-              {vehicle && (
-                <Marker position={[vehicle.depot_lat, vehicle.depot_lng]} icon={depotIcon}>
-                  <Popup><strong>Depot</strong><br />{vehicle.vehicle_code}</Popup>
+              {nearby && (
+                <Marker position={nearby.depot} icon={depotIcon}>
+                  <Popup>
+                    <strong>Depot</strong><br />{vehicle?.vehicle_code}<br />
+                    {userLocation && `${haversineKm(nearby.depot, userLocation).toFixed(1)} km away`}
+                  </Popup>
                 </Marker>
               )}
-              {stops.slice(1).map((s) => (
-                <Marker key={s.id} position={[s.lat, s.lng]} icon={stopIcon}>
-                  <Popup><strong>Stop {s.stop_order}</strong>{s.stop_name ? <><br />{s.stop_name}</> : null}</Popup>
+              {nearby?.stops.map((s, i) => (
+                <Marker key={i} position={s} icon={stopIcon}>
+                  <Popup><strong>Stop {i + 1}</strong></Popup>
                 </Marker>
               ))}
               {fullPath.length > 1 && (
