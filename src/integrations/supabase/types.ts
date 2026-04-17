@@ -64,6 +64,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          address_lat: number | null
+          address_lng: number | null
           avatar_url: string | null
           created_at: string | null
           full_name: string | null
@@ -71,6 +74,9 @@ export type Database = {
           language: string | null
         }
         Insert: {
+          address?: string | null
+          address_lat?: number | null
+          address_lng?: number | null
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
@@ -78,11 +84,135 @@ export type Database = {
           language?: string | null
         }
         Update: {
+          address?: string | null
+          address_lat?: number | null
+          address_lng?: number | null
           avatar_url?: string | null
           created_at?: string | null
           full_name?: string | null
           id?: string
           language?: string | null
+        }
+        Relationships: []
+      }
+      vehicle_route_stops: {
+        Row: {
+          id: string
+          lat: number
+          lng: number
+          stop_name: string | null
+          stop_order: number
+          vehicle_id: string
+        }
+        Insert: {
+          id?: string
+          lat: number
+          lng: number
+          stop_name?: string | null
+          stop_order: number
+          vehicle_id: string
+        }
+        Update: {
+          id?: string
+          lat?: number
+          lng?: number
+          stop_name?: string | null
+          stop_order?: number
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_route_stops_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          avg_speed_kmh: number
+          created_at: string | null
+          depot_lat: number
+          depot_lng: number
+          driver_name: string | null
+          id: string
+          start_time: string
+          status: string
+          vehicle_code: string
+          zone_id: string
+        }
+        Insert: {
+          avg_speed_kmh?: number
+          created_at?: string | null
+          depot_lat: number
+          depot_lng: number
+          driver_name?: string | null
+          id?: string
+          start_time?: string
+          status?: string
+          vehicle_code: string
+          zone_id: string
+        }
+        Update: {
+          avg_speed_kmh?: number
+          created_at?: string | null
+          depot_lat?: number
+          depot_lng?: number
+          driver_name?: string | null
+          id?: string
+          start_time?: string
+          status?: string
+          vehicle_code?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zones: {
+        Row: {
+          center_lat: number
+          center_lng: number
+          city: string | null
+          created_at: string | null
+          id: string
+          max_lat: number
+          max_lng: number
+          min_lat: number
+          min_lng: number
+          name: string
+        }
+        Insert: {
+          center_lat: number
+          center_lng: number
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          max_lat: number
+          max_lng: number
+          min_lat: number
+          min_lng: number
+          name: string
+        }
+        Update: {
+          center_lat?: number
+          center_lng?: number
+          city?: string | null
+          created_at?: string | null
+          id?: string
+          max_lat?: number
+          max_lng?: number
+          min_lat?: number
+          min_lng?: number
+          name?: string
         }
         Relationships: []
       }
