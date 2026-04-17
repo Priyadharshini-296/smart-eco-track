@@ -281,14 +281,17 @@ export default function LiveTracking() {
                   <Popup><strong>Your location</strong></Popup>
                 </Marker>
               )}
-              {vehicle && (
-                <Marker position={[vehicle.depot_lat, vehicle.depot_lng]} icon={depotIcon}>
-                  <Popup><strong>Depot</strong><br />{vehicle.vehicle_code}</Popup>
+              {nearby && (
+                <Marker position={nearby.depot} icon={depotIcon}>
+                  <Popup>
+                    <strong>Depot</strong><br />{vehicle?.vehicle_code}<br />
+                    {userLocation && `${haversineKm(nearby.depot, userLocation).toFixed(1)} km away`}
+                  </Popup>
                 </Marker>
               )}
-              {stops.slice(1).map((s) => (
-                <Marker key={s.id} position={[s.lat, s.lng]} icon={stopIcon}>
-                  <Popup><strong>Stop {s.stop_order}</strong>{s.stop_name ? <><br />{s.stop_name}</> : null}</Popup>
+              {nearby?.stops.map((s, i) => (
+                <Marker key={i} position={s} icon={stopIcon}>
+                  <Popup><strong>Stop {i + 1}</strong></Popup>
                 </Marker>
               ))}
               {fullPath.length > 1 && (
