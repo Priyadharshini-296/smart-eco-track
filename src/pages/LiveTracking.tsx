@@ -115,14 +115,20 @@ export default function LiveTracking() {
     }
   }, [userLocation, vehicles, zones]);
 
-  // Build dense path + cumulative distances
+  // Build a virtual depot 10–20 km from the user, plus intermediate stops along the way
+  const nearby = useMemo(() => {
+    if (!vehicle || !userLocation) return null;
+    return makeNearbyRoute(userLocation, vehicle.id, 5, 10, 20);
+  }, [vehicle, userLocation]);
+
+  // Build dense path + cumulative distances (depot -> intermediate stops -> user)
   const { densePath, cumKm, fullPath } = useMemo(() => {
-    if (!vehicle || !userLocation || stops.length === 0)
+    if (!vehicle || !userLocation || !nearby)
       return { densePath: [] as LatLng[], cumKm: [] as number[], fullPath: [] as LatLng[] };
-    const full = buildRoutePath(vehicle, stops, userLocation);
+    const full: LatLng[] = [nearby.depot, ...nearby.stops, userLocation];
     const dense = densifyPath(full, 0.1);
     return { densePath: dense, cumKm: cumulativeDistances(dense), fullPath: full };
-  }, [vehicle, stops, userLocation]);
+  }, [vehicle, nearby, userLocation]);
 
   // Tick every second; recompute progress
   useEffect(() => {
