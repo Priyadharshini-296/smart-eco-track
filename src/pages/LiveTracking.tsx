@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAllVehicles, fetchAllZones, fetchRouteStops,
   assignVehicle, buildRoutePath, densifyPath, cumulativeDistances,
-  computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm,
+  computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm, findNearestDepot,
   type Vehicle, type Zone, type RouteStop, type LatLng, type ProgressInfo,
 } from "@/lib/tracking";
 
@@ -61,6 +61,7 @@ export default function LiveTracking() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [stops, setStops] = useState<RouteStop[]>([]);
+  const [depotInfo, setDepotInfo] = useState<{ loc: LatLng; name: string } | null>(null);
 
   const [demoMode, setDemoMode] = useState(false);
   const [demoStart, setDemoStart] = useState<Date | null>(null);
@@ -115,11 +116,27 @@ export default function LiveTracking() {
     }
   }, [userLocation, vehicles, zones]);
 
-  // Build a virtual depot 10–20 km from the user, plus intermediate stops along the way
+  // Fetch nearest municipal depot whenever user location changes
+  useEffect(() => {
+    if (!userLocation) { setDepotInfo(null); return; }
+    let cancelled = false;
+    findNearestDepot(userLocation, 6000).then((d) => {
+      if (!cancelled) setDepotInfo(d);
+    });
+    return () => { cancelled = true; };
+  }, [userLocation]);
+
+  // Build depot (nearest municipal place) + serpentine street-coverage route around the user
   const nearby = useMemo(() => {
     if (!vehicle || !userLocation) return null;
-    return makeNearbyRoute(userLocation, vehicle.id, 5, 10, 20);
-  }, [vehicle, userLocation]);
+    return makeNearbyRoute(userLocation, vehicle.id, 8, 2, 4, depotInfo?.loc);
+  }, [vehicle, userLocation, depotInfo]);
+
+  // Force an early-morning start time (07:00) for realism — overrides DB value
+  const morningVehicle = useMemo<Vehicle | null>(
+    () => vehicle ? { ...vehicle, start_time: "07:00:00" } : null,
+    [vehicle],
+  );
 
   // Build dense path + cumulative distances (depot -> intermediate stops -> user)
   const { densePath, cumKm, fullPath } = useMemo(() => {
@@ -137,10 +154,10 @@ export default function LiveTracking() {
   }, []);
 
   useEffect(() => {
-    if (!vehicle || densePath.length === 0 || !userLocation) { setProgress(null); return; }
-    const p = computeProgress(now, vehicle, densePath, cumKm, userLocation, demoMode ? demoStart : null);
+    if (!morningVehicle || densePath.length === 0 || !userLocation) { setProgress(null); return; }
+    const p = computeProgress(now, morningVehicle, densePath, cumKm, userLocation, demoMode ? demoStart : null);
     setProgress(p);
-  }, [now, vehicle, densePath, cumKm, userLocation, demoMode, demoStart]);
+  }, [now, morningVehicle, densePath, cumKm, userLocation, demoMode, demoStart]);
 
   // Notifications
   useEffect(() => {
@@ -284,8 +301,9 @@ export default function LiveTracking() {
               {nearby && (
                 <Marker position={nearby.depot} icon={depotIcon}>
                   <Popup>
-                    <strong>Depot</strong><br />{vehicle?.vehicle_code}<br />
-                    {userLocation && `${haversineKm(nearby.depot, userLocation).toFixed(1)} km away`}
+                    <strong>{depotInfo?.name || "Municipal Depot"}</strong><br />
+                    {vehicle?.vehicle_code}<br />
+                    {userLocation && `${haversineKm(nearby.depot, userLocation).toFixed(1)} km from you`}
                   </Popup>
                 </Marker>
               )}
@@ -352,9 +370,10 @@ export default function LiveTracking() {
                 <div className="text-sm text-muted-foreground space-y-1">
                   <div>Driver: <span className="text-foreground">{vehicle.driver_name || "—"}</span></div>
                   <div>Zone: <span className="text-foreground">{zones.find(z => z.id === vehicle.zone_id)?.name || "—"}</span></div>
-                  <div>Start time: <span className="text-foreground">{vehicle.start_time.slice(0,5)}</span></div>
+                  <div>Depot: <span className="text-foreground">{depotInfo?.name || "Nearby municipal depot"}</span></div>
+                  <div>Start time: <span className="text-foreground">07:00 AM</span></div>
                   <div>Avg speed: <span className="text-foreground">{vehicle.avg_speed_kmh} km/h</span></div>
-                  <div>Stops: <span className="text-foreground">{stops.length}</span></div>
+                  <div>Coverage stops: <span className="text-foreground">{nearby?.stops.length || 0}</span></div>
                 </div>
                 {progress && progress.totalDistanceKm > 0 && (
                   <div>

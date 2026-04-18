@@ -104,36 +104,100 @@ export function buildRoutePath(vehicle: Vehicle, stops: RouteStop[], userLoc: La
   return path;
 }
 
-// Generate a virtual depot 10–20 km from the user in a deterministic direction
-// (seeded by vehicle id so it stays stable across renders), with intermediate stops along the way.
+// Find the nearest municipal-style place (town hall / municipal office / civic amenity)
+// to act as the vehicle depot. Falls back to the nearest named locality if none found.
+// Uses Overpass API; if it fails, returns null and caller can fallback to deterministic depot.
+export async function findNearestDepot(
+  userLoc: LatLng,
+  radiusM = 5000,
+): Promise<{ loc: LatLng; name: string } | null> {
+  try {
+    // Look for municipal/civic facilities and town centres around the user
+    const q = `[out:json][timeout:15];(
+      node["amenity"~"townhall|community_centre|waste_transfer_station|recycling"](around:${radiusM},${userLoc[0]},${userLoc[1]});
+      node["office"="government"](around:${radiusM},${userLoc[0]},${userLoc[1]});
+      node["place"~"town|suburb|village|neighbourhood"](around:${radiusM},${userLoc[0]},${userLoc[1]});
+    );out 30;`;
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      body: "data=" + encodeURIComponent(q),
+    });
+    const data = await res.json();
+    const nodes: Array<{ lat: number; lon: number; tags?: Record<string, string> }> = data?.elements || [];
+    if (nodes.length === 0) return null;
+    // Pick the nearest one that is at least 1.5 km away (so depot isn't on top of user),
+    // otherwise just the nearest.
+    const scored = nodes.map((n) => ({
+      n,
+      d: haversineKm(userLoc, [n.lat, n.lon]),
+    }));
+    scored.sort((a, b) => a.d - b.d);
+    const preferred = scored.find((s) => s.d >= 1.5) || scored[0];
+    const tags = preferred.n.tags || {};
+    const name = tags.name || tags["addr:city"] || tags.place || "Municipal depot";
+    return { loc: [preferred.n.lat, preferred.n.lon], name };
+  } catch (e) {
+    console.warn("findNearestDepot failed", e);
+    return null;
+  }
+}
+
+// Generate a realistic neighborhood collection route: depot -> weaving street-coverage
+// path around the user's home -> ending at the user. This simulates a vehicle that covers
+// every street in the area.
 export function makeNearbyRoute(
   userLoc: LatLng,
   vehicleId: string,
-  numStops = 5,
-  minKm = 10,
-  maxKm = 20,
+  numStops = 8,
+  _minKm = 2,
+  _maxKm = 4,
+  depotOverride?: LatLng,
 ): { depot: LatLng; stops: LatLng[] } {
   // Deterministic pseudo-random from vehicle id
   let seed = 0;
   for (let i = 0; i < vehicleId.length; i++) seed = (seed * 31 + vehicleId.charCodeAt(i)) >>> 0;
   const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 0xffffffff; };
 
-  const distanceKm = minKm + rand() * (maxKm - minKm);
-  const bearing = rand() * 2 * Math.PI; // radians
+  // Depot: prefer override (real municipal place); fallback to a deterministic point 2–4 km away
+  let depot: LatLng;
+  if (depotOverride) {
+    depot = depotOverride;
+  } else {
+    const distanceKm = _minKm + rand() * (_maxKm - _minKm);
+    const bearing = rand() * 2 * Math.PI;
+    const dLat = (distanceKm * Math.cos(bearing)) / 111;
+    const dLng = (distanceKm * Math.sin(bearing)) / (111 * Math.cos((userLoc[0] * Math.PI) / 180));
+    depot = [userLoc[0] + dLat, userLoc[1] + dLng];
+  }
 
-  // Convert km offset to degrees (approx): 1° lat ≈ 111 km
-  const dLat = (distanceKm * Math.cos(bearing)) / 111;
-  const dLng = (distanceKm * Math.sin(bearing)) / (111 * Math.cos((userLoc[0] * Math.PI) / 180));
-  const depot: LatLng = [userLoc[0] + dLat, userLoc[1] + dLng];
-
-  // Intermediate stops between depot and user with small perpendicular jitter for realism
+  // Build a serpentine "street-coverage" pattern around the user (≈600m × 600m grid)
+  // The truck enters the neighborhood and weaves up/down rows like a lawn mower,
+  // ending near the user's home.
   const stops: LatLng[] = [];
-  for (let i = 1; i <= numStops; i++) {
-    const t = i / (numStops + 1);
-    const baseLat = depot[0] + (userLoc[0] - depot[0]) * t;
-    const baseLng = depot[1] + (userLoc[1] - depot[1]) * t;
-    const jitter = (rand() - 0.5) * 0.008; // ~800m max
-    stops.push([baseLat + jitter, baseLng + jitter]);
+  const halfBoxKm = 0.3; // 600m wide coverage area centered roughly on user
+  const rows = Math.max(3, Math.ceil(numStops / 2));
+  const cols = 2;
+  const latPerKm = 1 / 111;
+  const lngPerKm = 1 / (111 * Math.cos((userLoc[0] * Math.PI) / 180));
+
+  // Entry stop: between depot and the neighborhood
+  const entryLat = userLoc[0] + (depot[0] - userLoc[0]) * 0.25;
+  const entryLng = userLoc[1] + (depot[1] - userLoc[1]) * 0.25;
+  stops.push([entryLat, entryLng]);
+
+  for (let r = 0; r < rows; r++) {
+    const rowOffsetKm = -halfBoxKm + (r / Math.max(1, rows - 1)) * (2 * halfBoxKm);
+    for (let c = 0; c < cols; c++) {
+      // Serpentine: alternate direction every row
+      const colIdx = r % 2 === 0 ? c : cols - 1 - c;
+      const colOffsetKm = -halfBoxKm + (colIdx / Math.max(1, cols - 1)) * (2 * halfBoxKm);
+      const jitterLat = (rand() - 0.5) * 0.0008;
+      const jitterLng = (rand() - 0.5) * 0.0008;
+      stops.push([
+        userLoc[0] + rowOffsetKm * latPerKm + jitterLat,
+        userLoc[1] + colOffsetKm * lngPerKm + jitterLng,
+      ]);
+    }
   }
   return { depot, stops };
 }
