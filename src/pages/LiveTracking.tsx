@@ -15,8 +15,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAllVehicles, fetchAllZones, fetchRouteStops,
-  assignVehicle, buildRoutePath, densifyPath, cumulativeDistances,
+  assignVehicle, densifyPath, cumulativeDistances,
   computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm, findNearestDepot,
+  snapToRoads,
   type Vehicle, type Zone, type RouteStop, type LatLng, type ProgressInfo,
 } from "@/lib/tracking";
 
