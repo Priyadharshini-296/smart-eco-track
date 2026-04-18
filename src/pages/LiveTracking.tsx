@@ -15,8 +15,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAllVehicles, fetchAllZones, fetchRouteStops,
-  assignVehicle, buildRoutePath, densifyPath, cumulativeDistances,
+  assignVehicle, densifyPath, cumulativeDistances,
   computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm, findNearestDepot,
+  snapToRoads,
   type Vehicle, type Zone, type RouteStop, type LatLng, type ProgressInfo,
 } from "@/lib/tracking";
 
@@ -138,14 +139,25 @@ export default function LiveTracking() {
     [vehicle],
   );
 
-  // Build dense path + cumulative distances (depot -> intermediate stops -> user)
-  const { densePath, cumKm, fullPath } = useMemo(() => {
-    if (!vehicle || !userLocation || !nearby)
-      return { densePath: [] as LatLng[], cumKm: [] as number[], fullPath: [] as LatLng[] };
-    const full: LatLng[] = [nearby.depot, ...nearby.stops, userLocation];
-    const dense = densifyPath(full, 0.1);
-    return { densePath: dense, cumKm: cumulativeDistances(dense), fullPath: full };
+  // Build the road-snapped route: depot -> intermediate stops -> user.
+  // Uses OSRM to follow actual streets instead of straight lines.
+  const [roadPath, setRoadPath] = useState<LatLng[]>([]);
+  useEffect(() => {
+    if (!vehicle || !userLocation || !nearby) { setRoadPath([]); return; }
+    let cancelled = false;
+    const waypoints: LatLng[] = [nearby.depot, ...nearby.stops, userLocation];
+    snapToRoads(waypoints).then((snapped) => {
+      if (!cancelled) setRoadPath(snapped);
+    });
+    return () => { cancelled = true; };
   }, [vehicle, nearby, userLocation]);
+
+  const { densePath, cumKm, fullPath } = useMemo(() => {
+    if (roadPath.length < 2)
+      return { densePath: [] as LatLng[], cumKm: [] as number[], fullPath: [] as LatLng[] };
+    const dense = densifyPath(roadPath, 0.05);
+    return { densePath: dense, cumKm: cumulativeDistances(dense), fullPath: roadPath };
+  }, [roadPath]);
 
   // Tick every second; recompute progress
   useEffect(() => {

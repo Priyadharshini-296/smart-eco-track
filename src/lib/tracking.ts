@@ -104,41 +104,64 @@ export function buildRoutePath(vehicle: Vehicle, stops: RouteStop[], userLoc: La
   return path;
 }
 
-// Find the nearest municipal-style place (town hall / municipal office / civic amenity)
-// to act as the vehicle depot. Falls back to the nearest named locality if none found.
-// Uses Overpass API; if it fails, returns null and caller can fallback to deterministic depot.
+// Find the nearest municipal/town centre to act as the vehicle depot.
+// Uses Nominatim reverse geocoding to read the user's town/city/village,
+// then forward-geocodes that town to get its centre coordinates. This is
+// much more reliable than Overpass and yields the correct municipality
+// (e.g., "Tiruchengode" instead of a neighbouring town).
 export async function findNearestDepot(
   userLoc: LatLng,
-  radiusM = 5000,
+  _radiusM = 5000,
 ): Promise<{ loc: LatLng; name: string } | null> {
   try {
-    // Look for municipal/civic facilities and town centres around the user
-    const q = `[out:json][timeout:15];(
-      node["amenity"~"townhall|community_centre|waste_transfer_station|recycling"](around:${radiusM},${userLoc[0]},${userLoc[1]});
-      node["office"="government"](around:${radiusM},${userLoc[0]},${userLoc[1]});
-      node["place"~"town|suburb|village|neighbourhood"](around:${radiusM},${userLoc[0]},${userLoc[1]});
-    );out 30;`;
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      body: "data=" + encodeURIComponent(q),
-    });
-    const data = await res.json();
-    const nodes: Array<{ lat: number; lon: number; tags?: Record<string, string> }> = data?.elements || [];
-    if (nodes.length === 0) return null;
-    // Pick the nearest one that is at least 1.5 km away (so depot isn't on top of user),
-    // otherwise just the nearest.
-    const scored = nodes.map((n) => ({
-      n,
-      d: haversineKm(userLoc, [n.lat, n.lon]),
-    }));
-    scored.sort((a, b) => a.d - b.d);
-    const preferred = scored.find((s) => s.d >= 1.5) || scored[0];
-    const tags = preferred.n.tags || {};
-    const name = tags.name || tags["addr:city"] || tags.place || "Municipal depot";
-    return { loc: [preferred.n.lat, preferred.n.lon], name };
+    // 1) Reverse geocode the user's location to extract the town name
+    const revRes = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${userLoc[0]}&lon=${userLoc[1]}&zoom=12&addressdetails=1`,
+      { headers: { "Accept-Language": "en" } },
+    );
+    const rev = await revRes.json();
+    const addr = rev?.address || {};
+    const townName: string | undefined =
+      addr.town || addr.city || addr.municipality || addr.village ||
+      addr.suburb || addr.county;
+    if (!townName) return null;
+
+    // 2) Forward-geocode that town name to get its civic centre
+    const state = addr.state || addr.region || "";
+    const country = addr.country || "";
+    const q = [townName, state, country].filter(Boolean).join(", ");
+    const fwdRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
+      { headers: { "Accept-Language": "en" } },
+    );
+    const fwd = await fwdRes.json();
+    if (!fwd || fwd.length === 0) return null;
+    const loc: LatLng = [parseFloat(fwd[0].lat), parseFloat(fwd[0].lon)];
+    return { loc, name: `${townName} Municipal Depot` };
   } catch (e) {
     console.warn("findNearestDepot failed", e);
     return null;
+  }
+}
+
+// Snap a sequence of waypoints to the actual road network using OSRM's
+// public demo server. Returns a polyline that follows real streets.
+// Falls back to the straight-line input if the request fails.
+export async function snapToRoads(waypoints: LatLng[]): Promise<LatLng[]> {
+  if (waypoints.length < 2) return waypoints;
+  try {
+    // OSRM expects lng,lat;lng,lat;...
+    const coords = waypoints.map((p) => `${p[1]},${p[0]}`).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const geom = data?.routes?.[0]?.geometry?.coordinates as [number, number][] | undefined;
+    if (!geom || geom.length < 2) return waypoints;
+    // GeoJSON is [lng, lat] -> convert to [lat, lng]
+    return geom.map(([lng, lat]) => [lat, lng] as LatLng);
+  } catch (e) {
+    console.warn("snapToRoads failed, using straight lines", e);
+    return waypoints;
   }
 }
 
