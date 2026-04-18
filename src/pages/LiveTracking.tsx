@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   fetchAllVehicles, fetchAllZones, fetchRouteStops,
   assignVehicle, buildRoutePath, densifyPath, cumulativeDistances,
-  computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm,
+  computeProgress, geocodeAddress, reverseGeocode, makeNearbyRoute, haversineKm, findNearestDepot,
   type Vehicle, type Zone, type RouteStop, type LatLng, type ProgressInfo,
 } from "@/lib/tracking";
 
