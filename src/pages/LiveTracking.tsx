@@ -61,6 +61,7 @@ export default function LiveTracking() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [stops, setStops] = useState<RouteStop[]>([]);
+  const [depotInfo, setDepotInfo] = useState<{ loc: LatLng; name: string } | null>(null);
 
   const [demoMode, setDemoMode] = useState(false);
   const [demoStart, setDemoStart] = useState<Date | null>(null);
