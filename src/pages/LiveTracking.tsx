@@ -370,9 +370,10 @@ export default function LiveTracking() {
                 <div className="text-sm text-muted-foreground space-y-1">
                   <div>Driver: <span className="text-foreground">{vehicle.driver_name || "—"}</span></div>
                   <div>Zone: <span className="text-foreground">{zones.find(z => z.id === vehicle.zone_id)?.name || "—"}</span></div>
-                  <div>Start time: <span className="text-foreground">{vehicle.start_time.slice(0,5)}</span></div>
+                  <div>Depot: <span className="text-foreground">{depotInfo?.name || "Nearby municipal depot"}</span></div>
+                  <div>Start time: <span className="text-foreground">07:00 AM</span></div>
                   <div>Avg speed: <span className="text-foreground">{vehicle.avg_speed_kmh} km/h</span></div>
-                  <div>Stops: <span className="text-foreground">{stops.length}</span></div>
+                  <div>Coverage stops: <span className="text-foreground">{nearby?.stops.length || 0}</span></div>
                 </div>
                 {progress && progress.totalDistanceKm > 0 && (
                   <div>
