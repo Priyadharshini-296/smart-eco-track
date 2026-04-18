@@ -301,8 +301,9 @@ export default function LiveTracking() {
               {nearby && (
                 <Marker position={nearby.depot} icon={depotIcon}>
                   <Popup>
-                    <strong>Depot</strong><br />{vehicle?.vehicle_code}<br />
-                    {userLocation && `${haversineKm(nearby.depot, userLocation).toFixed(1)} km away`}
+                    <strong>{depotInfo?.name || "Municipal Depot"}</strong><br />
+                    {vehicle?.vehicle_code}<br />
+                    {userLocation && `${haversineKm(nearby.depot, userLocation).toFixed(1)} km from you`}
                   </Popup>
                 </Marker>
               )}
