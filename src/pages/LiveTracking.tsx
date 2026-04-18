@@ -116,11 +116,27 @@ export default function LiveTracking() {
     }
   }, [userLocation, vehicles, zones]);
 
-  // Build a virtual depot 10–20 km from the user, plus intermediate stops along the way
+  // Fetch nearest municipal depot whenever user location changes
+  useEffect(() => {
+    if (!userLocation) { setDepotInfo(null); return; }
+    let cancelled = false;
+    findNearestDepot(userLocation, 6000).then((d) => {
+      if (!cancelled) setDepotInfo(d);
+    });
+    return () => { cancelled = true; };
+  }, [userLocation]);
+
+  // Build depot (nearest municipal place) + serpentine street-coverage route around the user
   const nearby = useMemo(() => {
     if (!vehicle || !userLocation) return null;
-    return makeNearbyRoute(userLocation, vehicle.id, 5, 10, 20);
-  }, [vehicle, userLocation]);
+    return makeNearbyRoute(userLocation, vehicle.id, 8, 2, 4, depotInfo?.loc);
+  }, [vehicle, userLocation, depotInfo]);
+
+  // Force an early-morning start time (07:00) for realism — overrides DB value
+  const morningVehicle = useMemo<Vehicle | null>(
+    () => vehicle ? { ...vehicle, start_time: "07:00:00" } : null,
+    [vehicle],
+  );
 
   // Build dense path + cumulative distances (depot -> intermediate stops -> user)
   const { densePath, cumKm, fullPath } = useMemo(() => {
