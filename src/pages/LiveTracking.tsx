@@ -154,10 +154,10 @@ export default function LiveTracking() {
   }, []);
 
   useEffect(() => {
-    if (!vehicle || densePath.length === 0 || !userLocation) { setProgress(null); return; }
-    const p = computeProgress(now, vehicle, densePath, cumKm, userLocation, demoMode ? demoStart : null);
+    if (!morningVehicle || densePath.length === 0 || !userLocation) { setProgress(null); return; }
+    const p = computeProgress(now, morningVehicle, densePath, cumKm, userLocation, demoMode ? demoStart : null);
     setProgress(p);
-  }, [now, vehicle, densePath, cumKm, userLocation, demoMode, demoStart]);
+  }, [now, morningVehicle, densePath, cumKm, userLocation, demoMode, demoStart]);
 
   // Notifications
   useEffect(() => {
